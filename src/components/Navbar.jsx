@@ -11,7 +11,7 @@ export default function Navbar() {
         {/* Logo */}
         <div className="font-black text-2xl tracking-tight flex items-center">
           <span className="text-yellow-400 text-2xl mr-2">💰</span>
-          <span>FINTRACK</span>
+          <span>COINCATCHER</span>
         </div>
 
         {/* Desktop Menu */}
@@ -90,8 +90,7 @@ export default function Navbar() {
                 isActive ? "font-semibold" : ""
               }`
             }
-          >
-          </NavLink>
+          ></NavLink>
         </div>
       )}
     </div>

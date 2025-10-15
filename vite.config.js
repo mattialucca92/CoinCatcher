@@ -4,6 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/FinTrack/", // <-- questo è fondamentale
+  base: "/CoinCatcher/", // <-- questo è fondamentale
   plugins: [react(), tailwindcss()],
 });

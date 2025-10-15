@@ -1,8 +1,8 @@
 {
-  "name": "fintrack",
+  "name": "coincatcher",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://mattialucca92.github.io/FinTrack",
+  "homepage": "https://mattialucca92.github.io/CoinCatcher",
   "type": "module",
   "scripts": {
     "dev": "vite",
