@@ -1,17 +1,14 @@
 import { useState } from "react";
-import { CgLaptop } from "react-icons/cg";
-import DatePicker from "react-datepicker"; // IMPORT obbligatorio
+import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 const Transaction = ({ transazioni, setTransazioni }) => {
-  //INIZIALIZZO GLI STATE CHE MI SERVONO PER I FILTRI
+  // FILTRI
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
-  const [filtroDataDa, setFiltroDataDa] = useState("");
-  const [filtroDataA, setFiltroDataA] = useState("");
-
-    
+  const [filtroDataDa, setFiltroDataDa] = useState(null);
+  const [filtroDataA, setFiltroDataA] = useState(null);
 
   const categorieUniche = [
     "🍔 Cibo",
@@ -21,11 +18,8 @@ const Transaction = ({ transazioni, setTransazioni }) => {
     "🚌 Trasporti",
     "🎵 Intrattenimento",
   ];
-  const [categoriaSelezionata, setCategoriaSelezionata] = useState("");
 
-
-  
-
+  // FILTRO TRANSAZIONI
   const transazioniFiltrate = transazioni.filter((t) => {
     const matchTipo = filtroTipo ? t.tipo === filtroTipo : true;
     const matchCategoria = filtroCategoria
@@ -33,50 +27,56 @@ const Transaction = ({ transazioni, setTransazioni }) => {
       : true;
 
     let matchData = true;
-    if (filtroDataDa) matchData = matchData && t.data >= filtroDataDa;
-    if (filtroDataA) matchData = matchData && t.data <= filtroDataA;
+    if (filtroDataDa)
+      matchData = matchData && t.data >= format(filtroDataDa, "yyyy-MM-dd");
+    if (filtroDataA)
+      matchData = matchData && t.data <= format(filtroDataA, "yyyy-MM-dd");
 
     return matchTipo && matchCategoria && matchData;
   });
 
-  // INIZIALIZZO UNO STATE PER IL FORM
+  // RESET FILTRI
+  const resetFiltri = () => {
+    setFiltroTipo("");
+    setFiltroCategoria("");
+    setFiltroDataDa(null);
+    setFiltroDataA(null);
+  };
+
+  // FORM
   const [formData, setFormData] = useState({
     tipo: "entrata",
     importo: "",
     categoria: "",
     descrizione: "",
-    data: "",
+    data: null,
+    id: null,
   });
 
-  // helper per convertire stringa YYYY-MM-DD -> Date o null
-  const parseDateString = (s) => (s ? new Date(s + "T00:00:00") : null);
-
-  // handler per react-datepicker (riceve un Date o null)
-  const handleDateChange = (date) => {
-    setFormData((prev) => ({
-      ...prev,
-      data: date ? format(date, "yyyy-MM-dd") : "",
-    }));
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ALL'INVIO DEL FORM , PREVENGO IL DEFAULT E CREO UN NUOVO OGGETTO CONTENENTE TUTTE LE INFORMAZIONI SCRITTE NEL FORM + RESET DEL FORM ALL'INVIO
+  const handleDateChange = (date) => {
+    setFormData({ ...formData, data: date });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.importo || !formData.categoria || !formData.data) return;
 
     const nuovaTransazione = {
-      id: Date.now(),
+      id: formData.id || Date.now(),
       tipo: formData.tipo,
       importo: Number(formData.importo),
-      categoria: formData.categoria, // <- qui prendi formData
+      categoria: formData.categoria,
       descrizione: formData.descrizione,
-      data: formData.data,
+      data: format(formData.data, "yyyy-MM-dd"),
     };
 
     if (formData.id) {
       setTransazioni(
-        transazioni.map((t) =>
-          t.id === formData.id ? { ...formData, id: t.id } : t
-        )
+        transazioni.map((t) => (t.id === formData.id ? nuovaTransazione : t))
       );
     } else {
       setTransazioni([nuovaTransazione, ...transazioni]);
@@ -87,61 +87,44 @@ const Transaction = ({ transazioni, setTransazioni }) => {
       importo: "",
       categoria: "",
       descrizione: "",
-      data: "",
+      data: null,
+      id: null,
     });
   };
 
-
-  // IMPLEMENTO IL PULSANTE MODIFICA/EDIT
   const handleEdit = (t) => {
     setFormData({
       tipo: t.tipo,
       importo: t.importo,
       categoria: t.categoria,
       descrizione: t.descrizione,
-      data: t.data,
-      id: t.id, // utile per sapere quale modificare
+      data: parseISO(t.data),
+      id: t.id,
     });
   };
 
-  // IMPLEMENTO IL PULSANTE ELIMINA
   const handleDelete = (id) => {
     setTransazioni(transazioni.filter((t) => t.id !== id));
   };
 
-  // CATTURO OGNI CAMBIAMENTO NEL FORM + COPIO TUTTI I DATI PRECEDENTI (...FORMDATA) + AGGIORNO SOLO IL CAMPO SPECIFICO ([e.target.name]: e.target.value)
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   return (
     <div className="min-h-screen bg-[#1E293B] p-6">
-      {/* RENDERING DEL FILTRO */}
+      {/* FILTRI */}
       <div className="bg-[#2C3E50] p-4 rounded-lg shadow-md mb-4 flex flex-col md:flex-row gap-4">
-        {/* Tipo */}
         <select
           value={filtroTipo}
           onChange={(e) => setFiltroTipo(e.target.value)}
           className="p-2 rounded bg-[#374151] text-white"
         >
-          <option className="font-Quicksand" value="">
-            Tutti i tipi
-          </option>
-          <option className="font-Quicksand" value="entrata">
-            Entrata
-          </option>
-          <option className="font-Quicksand" value="uscita">
-            Uscita
-          </option>
+          <option value="">Tutti i tipi</option>
+          <option value="entrata">Entrata</option>
+          <option value="uscita">Uscita</option>
         </select>
 
-        {/* Categoria */}
         <select
-          value={categoriaSelezionata}
-          onChange={(e) => setCategoriaSelezionata(e.target.value)}
+          value={filtroCategoria}
+          onChange={(e) => setFiltroCategoria(e.target.value)}
+          className="p-2 rounded bg-[#374151] text-white"
         >
           <option value="">Seleziona categoria 🎯</option>
           {categorieUniche.map((cat) => (
@@ -151,50 +134,24 @@ const Transaction = ({ transazioni, setTransazioni }) => {
           ))}
         </select>
 
-        {/* Data Da */}
-        <div>
-          <label className="text-white font-medium">Da:</label>
-          <div className="flex items-center bg-[#374151] rounded-md p-1 mt-1">
-            <DatePicker
-              selected={
-                filtroDataDa ? new Date(filtroDataDa + "T00:00:00") : null
-              }
-              onChange={(date) =>
-                setFiltroDataDa(date ? format(date, "yyyy-MM-dd") : "")
-              }
-              dateFormat="dd-MM-yyyy"
-              placeholderText="gg-mm-aaaa"
-              className="w-full p-2 bg-transparent text-white outline-none cursor-pointer"
-            />
-            <span className="ml-2 pr-2 text-gray-300 select-none">📅</span>
-          </div>
-        </div>
+        <DatePicker
+          selected={filtroDataDa}
+          onChange={setFiltroDataDa}
+          dateFormat="dd-MM-yyyy"
+          placeholderText="Da"
+          className="p-2 rounded bg-[#374151] text-white"
+        />
 
-        {/* Data A */}
-        <div>
-          <label className="text-white font-medium">A:</label>
-          <div className="flex items-center bg-[#374151] rounded-md p-1 mt-1">
-            <DatePicker
-              selected={
-                filtroDataA ? new Date(filtroDataA + "T00:00:00") : null
-              }
-              onChange={(date) =>
-                setFiltroDataA(date ? format(date, "yyyy-MM-dd") : "")
-              }
-              dateFormat="dd-MM-yyyy"
-              placeholderText="gg-mm-aaaa"
-              className="w-full p-2 bg-transparent text-white outline-none cursor-pointer"
-            />
-            <span className="ml-2 pr-2 text-gray-300 select-none">📅</span>
-          </div>
-        </div>
+        <DatePicker
+          selected={filtroDataA}
+          onChange={setFiltroDataA}
+          dateFormat="dd-MM-yyyy"
+          placeholderText="A"
+          className="p-2 rounded bg-[#374151] text-white"
+        />
+
         <button
-          onClick={() => {
-            setFiltroTipo("");
-            setFiltroCategoria("");
-            setFiltroDataDa("");
-            setFiltroDataA("");
-          }}
+          onClick={resetFiltri}
           className="bg-gray-500 text-white px-3 py-2 rounded-md hover:bg-gray-400 transition-colors"
         >
           Reset Filtri
@@ -207,8 +164,7 @@ const Transaction = ({ transazioni, setTransazioni }) => {
           {transazioniFiltrate.map((t) => (
             <div
               key={t.id}
-              className="relative p-4 rounded-lg shadow-md flex justify-between items-center
-                        bg-[#2C3E50] hover:bg-[#374151] transition-colors"
+              className="relative p-4 rounded-lg shadow-md flex justify-between items-center bg-[#2C3E50] hover:bg-[#374151] transition-colors"
             >
               <div>
                 <p
@@ -241,9 +197,8 @@ const Transaction = ({ transazioni, setTransazioni }) => {
           ))}
         </div>
 
-        {/* FORM + ANTEPRIMA */}
+        {/* FORM */}
         <div className="w-full md:w-1/2 space-y-6">
-          {/* FORM */}
           <div className="bg-[#2C3E50] p-6 rounded-lg shadow-md">
             <h2 className="text-white text-xl font-bold mb-4">
               Aggiungi Transazione
@@ -287,7 +242,7 @@ const Transaction = ({ transazioni, setTransazioni }) => {
                           : "bg-[#374151] text-white"
                       }`}
                       onClick={() =>
-                        setFormData((prev) => ({ ...prev, categoria: cat }))
+                        setFormData({ ...formData, categoria: cat })
                       }
                     >
                       {cat}
@@ -310,30 +265,20 @@ const Transaction = ({ transazioni, setTransazioni }) => {
 
               <div>
                 <label className="text-white font-medium">Data:</label>
-                <div className="relative mt-1">
-                  <div className="flex items-center bg-[#374151] rounded-md p-1">
-                    <DatePicker
-                      selected={parseDateString(formData.data)}
-                      onChange={handleDateChange}
-                      dateFormat="dd-MM-yyyy"
-                      placeholderText="Seleziona una data"
-                      className="w-full p-2 bg-transparent text-white outline-none cursor-pointer"
-                      popperClassName="react-datepicker-popper"
-                      calendarClassName="react-datepicker-calendar"
-                    />
-                    {/* icona calendario a destra */}
-                    <span className="ml-2 pr-2 text-gray-300 select-none">
-                      📅
-                    </span>
-                  </div>
-                </div>
+                <DatePicker
+                  selected={formData.data}
+                  onChange={handleDateChange}
+                  dateFormat="dd-MM-yyyy"
+                  placeholderText="Seleziona una data"
+                  className="w-full p-2 rounded-md bg-[#374151] text-white"
+                />
               </div>
 
               <button
                 type="submit"
                 className="w-full bg-yellow-400 text-gray-900 font-bold px-4 py-2 rounded-md hover:bg-yellow-300 transition-colors"
               >
-                Aggiungi Transazione
+                Salva Transazione
               </button>
             </form>
           </div>
